@@ -13,6 +13,7 @@ Requirements:
 ## Workflow
 
 1. Run `./record_criticalmaps.py` during the bicycling event that you want to visualize.
+   Alternatively, you may experiment with [the dataset](https://github.com/lumpiluk/criticalmaps-blender-visualization/releases/download/2026-06-09/criticalmaps-data_2026-06-07-adfc-berlin-sternfahrt.zip) from ADFC Berlin Sternfahrt on 2026-06-07.
 1. Create a copy of `visualization.blend` and open it in Blender. Allow the included script to run.
 1. Use BlenderGIS to download map tiles for the background. Be mindful of the map providers' licenses and attribution requirements.
 1. In Blender's Properties Editor, select the Scene tab and find the CriticalMaps section. This will only be visible if you ran the script included in the .blend file.
