@@ -19,15 +19,13 @@ import hashlib
 import json
 import signal
 import time
-from typing import Any, cast, TYPE_CHECKING
+from types import FrameType
+from typing import Any, cast
 import urllib.error
 import urllib.request
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
-
-if TYPE_CHECKING:
-    from types import FrameType
 
 API_URL = "https://api.criticalmaps.net/postv2"
 MIN_INTERVAL = 10
