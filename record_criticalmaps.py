@@ -15,57 +15,41 @@ Usage:
 
 import argparse
 import csv
-import hashlib
 import json
 import signal
 import time
 from types import FrameType
-from typing import Any, cast
+from typing import Any
 import urllib.error
 import urllib.request
-import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
-API_URL = "https://api.criticalmaps.net/postv2"
+API_URL = "https://api-cdn.criticalmaps.net/locations"
 MIN_INTERVAL = 10
 
-
-def device_id() -> str:
-    machine_id = str(uuid.getnode())
-    today = str(
-        datetime.now(UTC).date().timetuple().tm_yday
-        + datetime.now(UTC).year * 1000
-    )
-    return hashlib.md5((machine_id + today).encode()).hexdigest()
-
-
 def fetch_positions() -> dict[str, Any]:
-    payload = json.dumps({
-        "device": device_id(),
-        "location": {"latitude": 0, "longitude": 0},
-    }).encode()
     req = urllib.request.Request(
-        API_URL, data=payload, method="POST",
+        API_URL, method="GET",
         headers={"Content-Type": "application/json",
                  "Accept": "application/json",
                  "User-Agent": "criticalmaps-recorder/1.0"},
     )
     with urllib.request.urlopen(req, timeout=10) as resp:
-        return cast(dict[str, Any], json.loads(resp.read().decode()))
+        return json.loads(resp.read().decode())
 
 
 def save_csv(
         out_dir: Path,
         ts: int,
-        positions: dict[str, dict[str, float]],
+        positions: dict[str, Any],
 ) -> Path:
-    path = out_dir / f"{datetime.fromtimestamp(ts).isoformat()}.csv"
+    path = out_dir / f"{datetime.fromtimestamp(ts).strftime("%Y-%m-%dT%H%M%S.csv")}"
     with path.open("w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["device", "latitude", "longitude"])
-        for dev, info in positions.items():
-            writer.writerow([dev[:16],  # truncate hashes to save space
+        for info in positions:
+            writer.writerow([info["device"][:16],  # truncate hashes to save space
                              info["latitude"]  / 1_000_000,
                              info["longitude"] / 1_000_000])
     return path
@@ -95,13 +79,12 @@ def record(interval: int, duration: int | None, out_dir: Path) -> None:
 
         ts = int(datetime.now(UTC).timestamp())
         try:
-            data = fetch_positions()
-            positions = data.get("locations", {})
-            save_csv(out_dir, ts, positions)
+            positions = fetch_positions()
+            path = save_csv(out_dir, ts, positions)
             count += 1
             isodate = datetime.fromtimestamp(ts).isoformat()
             print(
-                f"  {isodate}  –  {len(positions)} rider(s)  →  {isodate}.csv"
+                f"  {isodate}  –  {len(positions)} rider(s)  →  {path.name}"
             )
         except (urllib.error.URLError, OSError, json.JSONDecodeError) as exc:
             print(f"  {isodate}  –  fetch error: {exc}")
